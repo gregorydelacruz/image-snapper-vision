@@ -33,17 +33,42 @@ const imageToBase64 = async (file: File): Promise<string> => {
   });
 };
 
+// Get API key from environment or localStorage
+const getApiKey = (): string => {
+  if (typeof window !== 'undefined') {
+    // First check runtime variable (for when key was set during the session)
+    if ((window as any).VITE_OPENAI_API_KEY) {
+      return (window as any).VITE_OPENAI_API_KEY;
+    }
+    
+    // Then check localStorage
+    const localStorageKey = localStorage.getItem('openai_api_key');
+    if (localStorageKey) {
+      return localStorageKey;
+    }
+  }
+  
+  // Fallback to environment variable
+  return import.meta.env.VITE_OPENAI_API_KEY || '';
+};
+
 // Real image analysis using GPT-4o
 export const recognizeImage = async (imageFile: File) => {
   try {
     console.log('Starting image analysis with GPT-4o...');
     const base64Image = await imageToBase64(imageFile);
+    const apiKey = getApiKey();
+    
+    if (!apiKey) {
+      console.warn('No OpenAI API key found, using fallback recognition');
+      return fallbackRecognition();
+    }
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY || ''}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4o',

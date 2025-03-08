@@ -1,8 +1,11 @@
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AnimatedTransition } from './AnimatedTransition';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Lock } from 'lucide-react';
 
 interface ImageUploaderProps {
   onImageSelected: (file: File) => void;
@@ -16,6 +19,48 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   className,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  
+  // Check for saved API key on component mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('openai_api_key');
+    if (savedApiKey) {
+      setHasApiKey(true);
+      // Update the environment variable at runtime
+      if (typeof window !== 'undefined') {
+        (window as any).VITE_OPENAI_API_KEY = savedApiKey;
+      }
+    } else {
+      setHasApiKey(false);
+    }
+  }, []);
+  
+  const handleApiKeySave = () => {
+    if (apiKey.trim().length > 0) {
+      localStorage.setItem('openai_api_key', apiKey);
+      // Update the environment variable at runtime
+      if (typeof window !== 'undefined') {
+        (window as any).VITE_OPENAI_API_KEY = apiKey;
+      }
+      setHasApiKey(true);
+      setShowApiKeyInput(false);
+      toast.success('API key saved');
+    } else {
+      toast.error('Please enter a valid API key');
+    }
+  };
+  
+  const handleClearApiKey = () => {
+    localStorage.removeItem('openai_api_key');
+    if (typeof window !== 'undefined') {
+      delete (window as any).VITE_OPENAI_API_KEY;
+    }
+    setHasApiKey(false);
+    setApiKey('');
+    toast.success('API key removed');
+  };
   
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -52,8 +97,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   }, [onImageSelected]);
 
-  // Check if API key is set
-  const apiKeyMissing = !import.meta.env.VITE_OPENAI_API_KEY;
+  // Check if API key is set from localStorage or env
+  const apiKeyMissing = !hasApiKey && !import.meta.env.VITE_OPENAI_API_KEY;
 
   return (
     <AnimatedTransition
@@ -68,7 +113,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           </p>
         </div>
         
-        {apiKeyMissing && (
+        {apiKeyMissing ? (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -78,9 +123,59 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  OpenAI API key not found. The app will use simulated results instead. To use real GPT-4o analysis, add <code className="bg-yellow-100 px-1 py-0.5 rounded">VITE_OPENAI_API_KEY</code> to your environment.
+                  OpenAI API key not found. The app will use simulated results instead.
+                  {!showApiKeyInput ? (
+                    <button 
+                      onClick={() => setShowApiKeyInput(true)}
+                      className="ml-2 underline text-blue-600 hover:text-blue-800"
+                    >
+                      Add your API key
+                    </button>
+                  ) : null}
                 </p>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 rounded-md">
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Lock className="h-5 w-5 text-green-500" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700">
+                    API key is set. Using GPT-4o for image analysis.
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleClearApiKey}
+                className="text-xs"
+              >
+                Remove Key
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {showApiKeyInput && (
+          <div className="flex flex-col space-y-2 p-4 border rounded-md bg-muted/30">
+            <p className="text-sm text-muted-foreground mb-2">
+              Enter your OpenAI API key. It will be stored locally on your device only.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="sk-..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleApiKeySave}>Save</Button>
+              <Button variant="outline" onClick={() => setShowApiKeyInput(false)}>Cancel</Button>
             </div>
           </div>
         )}
