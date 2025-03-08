@@ -17,8 +17,8 @@ const possibleLabels = [
 
 // This function simulates image analysis
 // In a real app, you would replace this with actual AI-based recognition
-export const recognizeImage = async (imageFile: File): Promise<RecognitionResult[]> {
-  return new Promise((resolve) => {
+export const recognizeImage = async (imageFile: File) => {
+  return new Promise<RecognitionResult[]>((resolve) => {
     // Simulate network delay
     setTimeout(() => {
       // Get 3-5 random labels
