@@ -1,7 +1,13 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { recognizeImage, RecognitionResult, createImagePreview, revokeImagePreview } from '@/utils/imageRecognition';
+import { 
+  recognizeImage, 
+  RecognitionResult, 
+  createImagePreview, 
+  revokeImagePreview,
+  generateImageCaption
+} from '@/utils/imageRecognition';
 
 export interface AnalyzedImage {
   id: string;
@@ -10,6 +16,7 @@ export interface AnalyzedImage {
   previewUrl: string;
   timestamp: Date;
   results: RecognitionResult[];
+  caption?: string; // Added caption field
 }
 
 export const useImageAnalysis = () => {
@@ -31,6 +38,7 @@ export const useImageAnalysis = () => {
       toast.promise(recognizeImage(file), {
         loading: 'Analyzing image...',
         success: (results) => {
+          const caption = generateImageCaption(results);
           const analyzedImage: AnalyzedImage = {
             id: crypto.randomUUID(),
             file,
@@ -38,6 +46,7 @@ export const useImageAnalysis = () => {
             previewUrl,
             timestamp: new Date(),
             results,
+            caption,
           };
           
           setCurrentImage(analyzedImage);

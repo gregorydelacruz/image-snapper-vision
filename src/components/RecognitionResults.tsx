@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { AnimatedTransition } from './AnimatedTransition';
 import { AnalyzedImage } from '@/hooks/useImageAnalysis';
-import { generateDescriptiveFilename } from '@/utils/imageRecognition';
+import { generateDescriptiveFilename, generateImageCaption } from '@/utils/imageRecognition';
 import { toast } from 'sonner';
 
 interface RecognitionResultsProps {
@@ -35,6 +35,9 @@ export const RecognitionResults: React.FC<RecognitionResultsProps> = ({
     }, 800);
   };
 
+  // Generate a natural language caption for the image
+  const imageCaption = generateImageCaption(image.results);
+
   return (
     <AnimatedTransition
       variant="scale-in"
@@ -50,11 +53,15 @@ export const RecognitionResults: React.FC<RecognitionResultsProps> = ({
             />
           </div>
           
+          <div className="p-3 bg-secondary/30 rounded-lg">
+            <p className="text-sm font-medium text-foreground/80">{imageCaption}</p>
+          </div>
+          
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              {image.file.name.length > 25 
-                ? `${image.file.name.substring(0, 22)}...` 
-                : image.file.name}
+              {image.fileName.length > 25 
+                ? `${image.fileName.substring(0, 22)}...` 
+                : image.fileName}
               {' '}&middot;{' '}
               {(image.file.size / 1024 / 1024).toFixed(2)} MB
             </p>

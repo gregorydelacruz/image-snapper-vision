@@ -60,7 +60,7 @@ export const ImageHistory: React.FC<ImageHistoryProps> = ({
                 currentImageId === image.id ? "scale-100" : "hover:scale-105",
                 "active:scale-95"
               )}
-              title={image.fileName}
+              title={image.caption || image.fileName}
             >
               <div 
                 className={cn(
@@ -73,9 +73,18 @@ export const ImageHistory: React.FC<ImageHistoryProps> = ({
               >
                 <img
                   src={image.previewUrl}
-                  alt={image.fileName || `History ${index + 1}`}
+                  alt={image.caption || image.fileName || `History ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
+                
+                {/* Caption overlay on hover */}
+                <div className={cn(
+                  "absolute inset-0 bg-black/60 flex items-end p-1",
+                  "opacity-0 group-hover:opacity-100 transition-opacity",
+                  "text-white text-[10px] leading-tight text-center"
+                )}>
+                  {image.caption || image.fileName}
+                </div>
               </div>
               <div className="mt-1 text-center text-xs text-muted-foreground">
                 {formatTime(image.timestamp)}
