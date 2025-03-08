@@ -35,21 +35,35 @@ const imageToBase64 = async (file: File): Promise<string> => {
 
 // Get API key from environment or localStorage
 const getApiKey = (): string => {
-  if (typeof window !== 'undefined') {
-    // First check runtime variable (for when key was set during the session)
-    if ((window as any).VITE_OPENAI_API_KEY) {
-      return (window as any).VITE_OPENAI_API_KEY;
-    }
-    
-    // Then check localStorage
-    const localStorageKey = localStorage.getItem('openai_api_key');
-    if (localStorageKey) {
-      return localStorageKey;
+  // For production: use environment variable only
+  // The API key should be set on the server side or via build-time environment variable
+  return import.meta.env.VITE_OPENAI_API_KEY || '';
+};
+
+// Set the API key (this will be used for development only)
+export const setApiKey = (key: string): void => {
+  if (import.meta.env.DEV) {
+    localStorage.setItem('openai_api_key', key);
+    // Update runtime variable
+    if (typeof window !== 'undefined') {
+      (window as any).VITE_OPENAI_API_KEY = key;
     }
   }
-  
-  // Fallback to environment variable
-  return import.meta.env.VITE_OPENAI_API_KEY || '';
+};
+
+// Clear stored key (development only)
+export const clearApiKey = (): void => {
+  if (import.meta.env.DEV) {
+    localStorage.removeItem('openai_api_key');
+    if (typeof window !== 'undefined') {
+      delete (window as any).VITE_OPENAI_API_KEY;
+    }
+  }
+};
+
+// Check if we're in development mode
+export const isDevelopment = (): boolean => {
+  return import.meta.env.DEV === true;
 };
 
 // Real image analysis using GPT-4o

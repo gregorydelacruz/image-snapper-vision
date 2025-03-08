@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -6,6 +5,7 @@ import { AnimatedTransition } from './AnimatedTransition';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Lock } from 'lucide-react';
+import { isDevelopment, setApiKey, clearApiKey } from '@/utils/imageRecognition';
 
 interface ImageUploaderProps {
   onImageSelected: (file: File) => void;
@@ -19,46 +19,55 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   className,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKeyState] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const isDevMode = isDevelopment();
   
-  // Check for saved API key on component mount
+  // Check for saved API key on component mount (development only)
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('openai_api_key');
-    if (savedApiKey) {
-      setHasApiKey(true);
-      // Update the environment variable at runtime
-      if (typeof window !== 'undefined') {
-        (window as any).VITE_OPENAI_API_KEY = savedApiKey;
+    if (isDevMode) {
+      const savedApiKey = localStorage.getItem('openai_api_key');
+      if (savedApiKey) {
+        setHasApiKey(true);
+        // Update the environment variable at runtime
+        if (typeof window !== 'undefined') {
+          (window as any).VITE_OPENAI_API_KEY = savedApiKey;
+        }
+      } else {
+        setHasApiKey(false);
       }
     } else {
-      setHasApiKey(false);
+      // In production, check if the environment variable is set
+      setHasApiKey(!!import.meta.env.VITE_OPENAI_API_KEY);
     }
-  }, []);
+  }, [isDevMode]);
   
   const handleApiKeySave = () => {
+    if (!isDevMode) {
+      toast.error('API key changes are only allowed in development mode');
+      return;
+    }
+    
     if (apiKey.trim().length > 0) {
-      localStorage.setItem('openai_api_key', apiKey);
-      // Update the environment variable at runtime
-      if (typeof window !== 'undefined') {
-        (window as any).VITE_OPENAI_API_KEY = apiKey;
-      }
+      setApiKey(apiKey);
       setHasApiKey(true);
       setShowApiKeyInput(false);
-      toast.success('API key saved');
+      toast.success('API key saved for this session');
     } else {
       toast.error('Please enter a valid API key');
     }
   };
   
   const handleClearApiKey = () => {
-    localStorage.removeItem('openai_api_key');
-    if (typeof window !== 'undefined') {
-      delete (window as any).VITE_OPENAI_API_KEY;
+    if (!isDevMode) {
+      toast.error('API key changes are only allowed in development mode');
+      return;
     }
+    
+    clearApiKey();
     setHasApiKey(false);
-    setApiKey('');
+    setApiKeyState('');
     toast.success('API key removed');
   };
   
@@ -97,8 +106,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   }, [onImageSelected]);
 
-  // Check if API key is set from localStorage or env
-  const apiKeyMissing = !hasApiKey && !import.meta.env.VITE_OPENAI_API_KEY;
+  // Check if API key is set from environment
+  const apiKeyMissing = !hasApiKey;
+  const apiKeyMessage = isDevMode 
+    ? "OpenAI API key not found. The app will use simulated results instead."
+    : "OpenAI API key not configured in production environment.";
 
   return (
     <AnimatedTransition
@@ -123,8 +135,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  OpenAI API key not found. The app will use simulated results instead.
-                  {!showApiKeyInput ? (
+                  {apiKeyMessage}
+                  {!showApiKeyInput && isDevMode ? (
                     <button 
                       onClick={() => setShowApiKeyInput(true)}
                       className="ml-2 underline text-blue-600 hover:text-blue-800"
@@ -149,19 +161,21 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                   </p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleClearApiKey}
-                className="text-xs"
-              >
-                Remove Key
-              </Button>
+              {isDevMode && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleClearApiKey}
+                  className="text-xs"
+                >
+                  Remove Key
+                </Button>
+              )}
             </div>
           </div>
         )}
         
-        {showApiKeyInput && (
+        {showApiKeyInput && isDevMode && (
           <div className="flex flex-col space-y-2 p-4 border rounded-md bg-muted/30">
             <p className="text-sm text-muted-foreground mb-2">
               Enter your OpenAI API key. It will be stored locally on your device only.
@@ -171,7 +185,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                 type="password"
                 placeholder="sk-..."
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => setApiKeyState(e.target.value)}
                 className="flex-1"
               />
               <Button onClick={handleApiKeySave}>Save</Button>
