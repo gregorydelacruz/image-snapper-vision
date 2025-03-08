@@ -46,6 +46,25 @@ export const recognizeImage = async (imageFile: File) => {
   });
 };
 
+// Generate a descriptive filename based on recognition results
+export const generateDescriptiveFilename = (
+  originalFilename: string, 
+  results: RecognitionResult[]
+): string => {
+  // Get the file extension
+  const extension = originalFilename.split('.').pop() || '';
+  
+  // Get top 2 labels with highest confidence
+  const topLabels = results.slice(0, 2).map(result => result.label);
+  
+  // Create a descriptive name with labels and timestamp
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+  const descriptiveName = `${topLabels.join('_')}_${timestamp}`;
+  
+  // Return new filename with original extension
+  return `${descriptiveName}.${extension}`;
+};
+
 // For creating image preview URLs
 export const createImagePreview = (file: File): string => {
   return URL.createObjectURL(file);

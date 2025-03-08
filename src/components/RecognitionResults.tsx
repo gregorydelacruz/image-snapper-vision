@@ -1,20 +1,40 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { AnimatedTransition } from './AnimatedTransition';
 import { AnalyzedImage } from '@/hooks/useImageAnalysis';
+import { generateDescriptiveFilename } from '@/utils/imageRecognition';
+import { toast } from 'sonner';
 
 interface RecognitionResultsProps {
   image: AnalyzedImage;
   onClear: () => void;
+  onRename?: (imageId: string, newName: string) => void;
   className?: string;
 }
 
 export const RecognitionResults: React.FC<RecognitionResultsProps> = ({
   image,
   onClear,
+  onRename,
   className,
 }) => {
+  const [isRenaming, setIsRenaming] = useState(false);
+  
+  const handleRename = () => {
+    setIsRenaming(true);
+    const newName = generateDescriptiveFilename(image.file.name, image.results);
+    
+    // Create a timeout to simulate the renaming process
+    setTimeout(() => {
+      setIsRenaming(false);
+      if (onRename) {
+        onRename(image.id, newName);
+        toast.success(`File renamed to: ${newName}`);
+      }
+    }, 800);
+  };
+
   return (
     <AnimatedTransition
       variant="scale-in"
@@ -39,12 +59,26 @@ export const RecognitionResults: React.FC<RecognitionResultsProps> = ({
               {(image.file.size / 1024 / 1024).toFixed(2)} MB
             </p>
             
-            <button
-              onClick={onClear}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Clear
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleRename}
+                disabled={isRenaming}
+                className={cn(
+                  "text-sm px-3 py-1 rounded-md",
+                  "bg-primary/10 text-primary",
+                  "hover:bg-primary/20 transition-colors",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                {isRenaming ? "Renaming..." : "Rename File"}
+              </button>
+              <button
+                onClick={onClear}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
         

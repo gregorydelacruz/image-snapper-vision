@@ -60,6 +60,7 @@ export const ImageHistory: React.FC<ImageHistoryProps> = ({
                 currentImageId === image.id ? "scale-100" : "hover:scale-105",
                 "active:scale-95"
               )}
+              title={image.fileName}
             >
               <div 
                 className={cn(
@@ -72,7 +73,7 @@ export const ImageHistory: React.FC<ImageHistoryProps> = ({
               >
                 <img
                   src={image.previewUrl}
-                  alt={`History ${index + 1}`}
+                  alt={image.fileName || `History ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
               </div>

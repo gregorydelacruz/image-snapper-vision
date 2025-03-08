@@ -15,7 +15,8 @@ const Index = () => {
     analyzeImage,
     clearCurrentImage,
     selectFromHistory,
-    clearHistory
+    clearHistory,
+    renameImage
   } = useImageAnalysis();
 
   return (
@@ -34,6 +35,7 @@ const Index = () => {
             <RecognitionResults 
               image={currentImage}
               onClear={clearCurrentImage}
+              onRename={renameImage}
               className="mt-8"
             />
           )}

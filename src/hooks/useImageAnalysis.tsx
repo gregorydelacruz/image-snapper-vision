@@ -6,6 +6,7 @@ import { recognizeImage, RecognitionResult, createImagePreview, revokeImagePrevi
 export interface AnalyzedImage {
   id: string;
   file: File;
+  fileName: string; // Store the display name separately from the actual file
   previewUrl: string;
   timestamp: Date;
   results: RecognitionResult[];
@@ -33,6 +34,7 @@ export const useImageAnalysis = () => {
           const analyzedImage: AnalyzedImage = {
             id: crypto.randomUUID(),
             file,
+            fileName: file.name, // Initialize with original filename
             previewUrl,
             timestamp: new Date(),
             results,
@@ -88,6 +90,21 @@ export const useImageAnalysis = () => {
     setImageHistory([]);
   }, [currentImage, imageHistory]);
 
+  const renameImage = useCallback((imageId: string, newName: string) => {
+    // Update current image if it's the one being renamed
+    if (currentImage && currentImage.id === imageId) {
+      setCurrentImage(prev => prev ? {
+        ...prev,
+        fileName: newName
+      } : null);
+    }
+    
+    // Update image in history
+    setImageHistory(prev => prev.map(img => 
+      img.id === imageId ? { ...img, fileName: newName } : img
+    ));
+  }, [currentImage]);
+
   return {
     isAnalyzing,
     currentImage,
@@ -95,6 +112,7 @@ export const useImageAnalysis = () => {
     analyzeImage,
     clearCurrentImage,
     selectFromHistory,
-    clearHistory
+    clearHistory,
+    renameImage
   };
 };
